@@ -3,13 +3,13 @@ package main
 import (
 	"log"
 
-	"github.com/manosriram/wingman/internal/program"
+	"github.com/manosriram/wingman/internal/repository"
 )
 
 func main() {
-	targetDir := "/Users/manosriram/go/src/floppy"
+	targetDir := "/Users/manosriram/go/src/go2java"
 
-	err := program.NewProgram(targetDir).Run()
+	err := repository.NewRepository(targetDir).Run()
 	if err != nil {
 		log.Fatalf("Error initializing program\n")
 	}
