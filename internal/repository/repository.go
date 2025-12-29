@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/manosriram/wingman/internal/ast"
 	"github.com/manosriram/wingman/internal/dag"
+	"github.com/manosriram/wingman/internal/types"
 	"github.com/manosriram/wingman/internal/utils"
 )
 
 type Repository struct {
 	TargetDir                string
 	Graph                    *dag.DAG
-	NodeImports              map[string][]string // File vs Imports
+	NodeImports              map[string][]types.NodeImport // File vs Imports
 	TreeSitterLanguageParser utils.TreeSitterParserType
-	// AST         *ast.AST -- map[string]*ast.AST?
+	RepositoryNodesAST       map[string]*ast.AST
 }
 
 func NewRepository(targetDir string) *Repository {
@@ -21,14 +23,23 @@ func NewRepository(targetDir string) *Repository {
 
 	return &Repository{
 		TargetDir:                targetDir,
-		NodeImports:              make(map[string][]string),
+		NodeImports:              make(map[string][]types.NodeImport),
 		TreeSitterLanguageParser: treeSitterLanguageParser,
+		Graph:                    dag.NewDAG(),
+		RepositoryNodesAST:       make(map[string]*ast.AST),
 	}
 }
 
 func (r *Repository) Run() error {
 	err := filepath.WalkDir(r.TargetDir, r.populateRepositoryNodeImports)
 
-	fmt.Println(r.NodeImports)
+	for _, v := range r.NodeImports {
+		r.Graph.BuildGraphFromImports(v)
+	}
+
+	fmt.Println(r.Graph)
+	fmt.Println(r.Graph.GetInNodesOfNode("os"))
+	fmt.Println(r.Graph.GetOutNodesOfNode("os"))
+
 	return err
 }

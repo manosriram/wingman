@@ -5,19 +5,32 @@ import (
 	"log"
 	"os"
 
+	"github.com/manosriram/wingman/internal/algorithm"
+	"github.com/manosriram/wingman/internal/dag"
 	"github.com/manosriram/wingman/internal/types"
 	"github.com/manosriram/wingman/internal/utils"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
+
+type Signature struct {
+}
 
 type AST struct {
 	Parser       utils.TreeSitterParserType
 	NodePath     string
 	NodeData     []byte
 	NodeLanguage types.Language
+	Signatures   map[string]Signature
+	Algorithm    algorithm.ContextAlgorithm
 }
 
-func NewAST(nodePath string, nodeLanguage types.Language, parser utils.TreeSitterParserType) *AST {
+func NewAST(nodePath string, parser utils.TreeSitterParserType) *AST {
+	// if types.DEFAULT_CONTEXT_ALGORITHM == types.PAGERANK_CONTEXT_ALGORITHM {
+
+	// } else {
+
+	// }
+
 	data, err := os.ReadFile(nodePath)
 	if err != nil {
 		log.Fatalf("Error initializing AST")
@@ -25,8 +38,10 @@ func NewAST(nodePath string, nodeLanguage types.Language, parser utils.TreeSitte
 	return &AST{
 		NodeData:     data,
 		NodePath:     nodePath,
+		NodeLanguage: utils.GetLanguage(nodePath),
 		Parser:       parser,
-		NodeLanguage: nodeLanguage,
+		Signatures:   make(map[string]Signature),
+		Algorithm:    algorithm.NewPageRankAlgorithm(),
 	}
 }
 
@@ -34,22 +49,20 @@ func (a *AST) BuildTree() (*tree_sitter.Tree, error) {
 	return a.Parser.GetLanguageParser(a.NodeLanguage).Parse(a.NodeData, nil), nil
 }
 
-func (a *AST) GetNodeImports() ([]string, error) {
+func (a *AST) GetNodeImports() ([]types.NodeImport, error) {
 	switch utils.GetLanguage(a.NodePath) {
 	case types.GO:
 		tree, err := a.BuildTree()
 		if err != nil {
-			return []string{}, err
+			return []types.NodeImport{}, err
 		}
 		defer tree.Close()
 
 		rootNode := tree.RootNode()
-		imports := []string{}
+		imports := []types.NodeImport{}
 
-		// Iterate through child nodes of the root
-		// TODO: Move this from here
-		for i := 0; i < int(rootNode.ChildCount()); i++ {
-			child := rootNode.Child(uint(i))
+		for i := uint(0); i < rootNode.ChildCount(); i++ {
+			child := rootNode.Child(i)
 
 			// Check if the node is an import_declaration
 			if child.Kind() == "import_declaration" {
@@ -59,21 +72,27 @@ func (a *AST) GetNodeImports() ([]string, error) {
 					path := importSpec.ChildByFieldName("path")
 					if path != nil {
 						importPath := a.NodeData[path.StartByte():path.EndByte()]
-						imports = append(imports, string(importPath))
+						imports = append(imports, types.NodeImport{
+							ImportPath: string(importPath),
+							FilePath:   a.NodePath,
+						})
 					}
 				}
 
 				// Handle grouped imports: import ( ... )
-				for j := 0; j < int(child.ChildCount()); j++ {
-					specList := child.Child(uint(j))
+				for j := uint(0); j < child.ChildCount(); j++ {
+					specList := child.Child(j)
 					if specList.Kind() == "import_spec_list" {
-						for k := 0; k < int(specList.ChildCount()); k++ {
-							spec := specList.Child(uint(k))
+						for k := uint(0); k < specList.ChildCount(); k++ {
+							spec := specList.Child(k)
 							if spec.Kind() == "import_spec" {
 								path := spec.ChildByFieldName("path")
 								if path != nil {
 									importPath := a.NodeData[path.StartByte():path.EndByte()]
-									imports = append(imports, string(importPath))
+									imports = append(imports, types.NodeImport{
+										ImportPath: string(importPath),
+										FilePath:   a.NodePath,
+									})
 								}
 							}
 						}
@@ -84,6 +103,16 @@ func (a *AST) GetNodeImports() ([]string, error) {
 
 		return imports, nil
 	default:
-		return []string{}, errors.New("Language support to be implemented")
+		return []types.NodeImport{}, nil // Unsupported language is not an error, hence "nil"
 	}
+}
+
+func (a *AST) CalculateASTNodesScore(dag *dag.DAG) error {
+	// switch?
+	if a.Algorithm.GetAlgorithmType() == types.PAGERANK_CONTEXT_ALGORITHM {
+
+	} else {
+		return errors.New("Algorithm not implemented")
+	}
+	return nil
 }

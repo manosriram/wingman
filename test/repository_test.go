@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/manosriram/wingman/internal/ast"
-	"github.com/manosriram/wingman/internal/types"
 	"github.com/manosriram/wingman/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +15,7 @@ const (
 
 func Test_GetNodeImports(t *testing.T) {
 	treeSitterLanguageParser := utils.NewTreeSitterParserType()
-	imports, err := ast.NewAST(TARGET_GO_NODE, types.GO, treeSitterLanguageParser).GetNodeImports()
+	imports, err := ast.NewAST(TARGET_GO_NODE, treeSitterLanguageParser).GetNodeImports()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, imports)
 }
