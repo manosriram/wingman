@@ -1,11 +1,11 @@
 package algorithm
 
 import (
-	"github.com/manosriram/wingman/internal/dag"
+	"github.com/manosriram/wingman/internal/graph"
 	"github.com/manosriram/wingman/internal/types"
 )
 
 type ContextAlgorithm interface {
-	CalculateScore(*dag.DAG)
+	CalculateScore(*graph.Graph)
 	GetAlgorithmType() types.ContextAlgorithmType
 }

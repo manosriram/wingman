@@ -1,10 +1,16 @@
 package repository
 
 import (
+	"bufio"
 	"io/fs"
+	"log"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/manosriram/wingman/internal/ast"
+	"github.com/manosriram/wingman/internal/types"
+	"github.com/manosriram/wingman/internal/utils"
 )
 
 func (r *Repository) populateRepositoryNodeImports(path string, d fs.DirEntry, err error) error {
@@ -13,12 +19,38 @@ func (r *Repository) populateRepositoryNodeImports(path string, d fs.DirEntry, e
 			return filepath.SkipDir
 		}
 	} else {
-		r.RepositoryNodesAST[path] = ast.NewAST(path, r.TreeSitterLanguageParser)
-		imports, err := r.RepositoryNodesAST[path].GetNodeImports()
+
+		var pkg string
+		if utils.GetLanguage(path) == types.GOLANG {
+
+			file, err := os.Open(path)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer file.Close()
+
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				pkg = scanner.Text()
+				break
+			}
+			if err := scanner.Err(); err != nil {
+				log.Fatal(err)
+			}
+
+			if utils.GetLanguage(path) == types.GOLANG && len(strings.Split(pkg, " ")) > 1 {
+				pkg = strings.Split(pkg, " ")[1]
+			}
+		} else {
+			pkg = path
+		}
+
+		r.RepositoryNodesAST[pkg] = ast.NewAST(path, r.TreeSitterLanguageParser)
+		imports, err := r.RepositoryNodesAST[pkg].GetNodeImports()
 		if err != nil {
 			return err
 		}
-		r.NodeImports[path] = imports
+		r.NodeImports[pkg] = imports
 	}
 	return nil
 }

@@ -1,6 +1,6 @@
 package types
 
 type NodeImport struct {
-	ImportPath string
-	FilePath   string
+	ImportPackage string
+	FilePath      string
 }

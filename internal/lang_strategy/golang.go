@@ -1,6 +1,7 @@
 package langstrategy
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/manosriram/wingman/internal/ast"
@@ -35,9 +36,10 @@ func (g *GolangStrategy) GetNodeImports() ([]types.NodeImport, error) {
 					path := importSpec.ChildByFieldName("path")
 					if path != nil {
 						importPath := strings.Trim(string(g.a.NodeData[path.StartByte():path.EndByte()]), "\"")
+						fmt.Println(importPath)
 						imports = append(imports, types.NodeImport{
-							ImportPath: importPath,
-							FilePath:   g.a.NodePath,
+							ImportPackage: importPath,
+							FilePath:      g.a.NodePath,
 						})
 					}
 				}
@@ -52,9 +54,10 @@ func (g *GolangStrategy) GetNodeImports() ([]types.NodeImport, error) {
 								path := spec.ChildByFieldName("path")
 								if path != nil {
 									importPath := strings.Trim(string(g.a.NodeData[path.StartByte():path.EndByte()]), "\"")
+									fmt.Println(importPath)
 									imports = append(imports, types.NodeImport{
-										ImportPath: importPath,
-										FilePath:   g.a.NodePath,
+										ImportPackage: importPath,
+										FilePath:      g.a.NodePath,
 									})
 								}
 							}

@@ -1,7 +1,7 @@
 package algorithm
 
 import (
-	"github.com/manosriram/wingman/internal/dag"
+	"github.com/manosriram/wingman/internal/graph"
 	"github.com/manosriram/wingman/internal/types"
 )
 
@@ -24,10 +24,10 @@ func NewPageRankAlgorithm() *PageRankAlgorithm {
 	}
 }
 
-func (p *PageRankAlgorithm) CalculateScore(dag *dag.DAG) {
+func (p *PageRankAlgorithm) CalculateScore(graph *graph.Graph) {
 	d := 0.85
 	iters := 50
-	N := len(dag.Graph)
+	N := len(graph.G)
 	if N == 0 {
 		return
 	}
@@ -38,28 +38,28 @@ func (p *PageRankAlgorithm) CalculateScore(dag *dag.DAG) {
 	next := make(map[string]float64, N)
 
 	// init uniform
-	for node := range dag.Graph {
+	for node := range graph.G {
 		prev[node] = 1.0 / n
 	}
 
 	for range iters {
 		// base teleportation
 		base := (1.0 - d) / n
-		for node := range dag.Graph {
+		for node := range graph.G {
 			next[node] = base
 		}
 
 		// dangling mass (nodes with outDegree 0)
 		var dangling float64
-		for v := range dag.Graph {
-			out := len(dag.Graph[v])
+		for v := range graph.G {
+			out := len(graph.G[v])
 			if out == 0 {
 				dangling += prev[v]
 			}
 		}
 
 		// distribute rank along edges
-		for v, outs := range dag.Graph {
+		for v, outs := range graph.G {
 			outDegree := len(outs)
 			if outDegree == 0 {
 				continue
@@ -74,7 +74,7 @@ func (p *PageRankAlgorithm) CalculateScore(dag *dag.DAG) {
 		// redistribute dangling mass uniformly
 		if dangling != 0 {
 			add := d * dangling / n
-			for node := range dag.Graph {
+			for node := range graph.G {
 				next[node] += add
 			}
 		}
