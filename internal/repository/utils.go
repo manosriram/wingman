@@ -19,8 +19,6 @@ func (r *Repository) populateRepositoryNodeImports(path string, d fs.DirEntry, e
 			return err
 		}
 		r.NodeImports[path] = imports
-
-		r.RepositoryNodesAST[path].CalculateASTNodesScore(r.Graph)
 	}
 	return nil
 }

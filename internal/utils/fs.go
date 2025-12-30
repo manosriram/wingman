@@ -13,7 +13,7 @@ func WalkDir(targetDir string, f func(path string, d fs.DirEntry, err error)) er
 
 func GetLanguage(path string) types.Language {
 	if strings.HasSuffix(path, ".go") {
-		return types.GO
+		return types.GOLANG
 	} else if strings.Contains(path, ".py") {
 		return types.PYTHON
 	} else if strings.Contains(path, ".js") {

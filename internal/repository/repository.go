@@ -36,10 +36,12 @@ func (r *Repository) Run() error {
 	for _, v := range r.NodeImports {
 		r.Graph.BuildGraphFromImports(v)
 	}
-
-	fmt.Println(r.Graph)
-	fmt.Println(r.Graph.GetInNodesOfNode("os"))
-	fmt.Println(r.Graph.GetOutNodesOfNode("os"))
+	for k := range r.NodeImports {
+		r.RepositoryNodesAST[k].CalculateASTNodesScore(r.Graph)
+	}
+	for k := range r.NodeImports {
+		fmt.Printf("path = %s, score = %f\n", k, r.RepositoryNodesAST[k].Algorithm.NodeScores[k])
+	}
 
 	return err
 }

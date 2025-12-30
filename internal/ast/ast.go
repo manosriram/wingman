@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/manosriram/wingman/internal/algorithm"
 	"github.com/manosriram/wingman/internal/dag"
@@ -21,7 +22,8 @@ type AST struct {
 	NodeData     []byte
 	NodeLanguage types.Language
 	Signatures   map[string]Signature
-	Algorithm    algorithm.ContextAlgorithm
+	// Algorithm    algorithm.ContextAlgorithm
+	Algorithm *algorithm.PageRankAlgorithm
 }
 
 func NewAST(nodePath string, parser utils.TreeSitterParserType) *AST {
@@ -51,12 +53,15 @@ func (a *AST) BuildTree() (*tree_sitter.Tree, error) {
 
 func (a *AST) GetNodeImports() ([]types.NodeImport, error) {
 	switch utils.GetLanguage(a.NodePath) {
-	case types.GO:
+	case types.GOLANG:
 		tree, err := a.BuildTree()
 		if err != nil {
 			return []types.NodeImport{}, err
 		}
 		defer tree.Close()
+
+		modFile, err := os.ReadFile("go.mod")
+		mo := strings.Split(strings.Split(string(modFile), "\n")[0], " ")[1]
 
 		rootNode := tree.RootNode()
 		imports := []types.NodeImport{}
@@ -71,11 +76,15 @@ func (a *AST) GetNodeImports() ([]types.NodeImport, error) {
 				if importSpec != nil && importSpec.Kind() == "import_spec" {
 					path := importSpec.ChildByFieldName("path")
 					if path != nil {
-						importPath := a.NodeData[path.StartByte():path.EndByte()]
-						imports = append(imports, types.NodeImport{
-							ImportPath: string(importPath),
-							FilePath:   a.NodePath,
-						})
+						importPath := strings.Trim(string(a.NodeData[path.StartByte():path.EndByte()]), "\"")
+						// Only if the import is internal
+						if strings.HasPrefix(importPath, mo) {
+							imports = append(imports, types.NodeImport{
+								ImportPath: importPath,
+								FilePath:   a.NodePath,
+							})
+						}
+
 					}
 				}
 
@@ -88,11 +97,15 @@ func (a *AST) GetNodeImports() ([]types.NodeImport, error) {
 							if spec.Kind() == "import_spec" {
 								path := spec.ChildByFieldName("path")
 								if path != nil {
-									importPath := a.NodeData[path.StartByte():path.EndByte()]
-									imports = append(imports, types.NodeImport{
-										ImportPath: string(importPath),
-										FilePath:   a.NodePath,
-									})
+									importPath := strings.Trim(string(a.NodeData[path.StartByte():path.EndByte()]), "\"")
+
+									// Only if the import is internal
+									if strings.HasPrefix(importPath, mo) {
+										imports = append(imports, types.NodeImport{
+											ImportPath: importPath,
+											FilePath:   a.NodePath,
+										})
+									}
 								}
 							}
 						}
@@ -110,7 +123,7 @@ func (a *AST) GetNodeImports() ([]types.NodeImport, error) {
 func (a *AST) CalculateASTNodesScore(dag *dag.DAG) error {
 	// switch?
 	if a.Algorithm.GetAlgorithmType() == types.PAGERANK_CONTEXT_ALGORITHM {
-
+		a.Algorithm.CalculateScore(dag)
 	} else {
 		return errors.New("Algorithm not implemented")
 	}

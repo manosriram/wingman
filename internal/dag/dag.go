@@ -1,8 +1,6 @@
 package dag
 
 import (
-	"fmt"
-
 	"github.com/manosriram/wingman/internal/types"
 )
 
@@ -29,6 +27,9 @@ func NewDAG() *DAG {
 }
 
 func (d *DAG) addEdge(src, dest GraphNode) {
+	if _, ok := d.Graph[src.NodeValue]; !ok {
+		d.Graph[src.NodeValue] = []GraphNode{}
+	}
 	d.Graph[src.NodeValue] = append(d.Graph[src.NodeValue], dest)
 }
 
@@ -41,7 +42,7 @@ func (d *DAG) GetInNodesOfNode(nodeKey string) []string {
 
 	for k, v := range d.Graph {
 		for _, imp := range v {
-			if imp.NodeValue == fmt.Sprintf("\"%s\"", nodeKey) {
+			if imp.NodeValue == nodeKey {
 				inNodes = append(inNodes, k)
 			}
 		}

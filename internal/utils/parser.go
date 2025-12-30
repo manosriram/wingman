@@ -28,7 +28,7 @@ func NewTreeSitterParserType() TreeSitterParserType {
 	goParser.SetLanguage(golangLanguage)
 	pythonParser.SetLanguage(pythonLanguage)
 
-	parsers[types.GO] = goParser
+	parsers[types.GOLANG] = goParser
 	parsers[types.JAVASCRIPT] = javascriptParser
 	parsers[types.PYTHON] = pythonParser
 
@@ -39,8 +39,8 @@ func NewTreeSitterParserType() TreeSitterParserType {
 
 func (p TreeSitterParserType) GetLanguageParser(language types.Language) *tree_sitter.Parser {
 	switch language {
-	case types.GO:
-		return p.parsers[types.GO]
+	case types.GOLANG:
+		return p.parsers[types.GOLANG]
 	case types.JAVASCRIPT:
 		return p.parsers[types.JAVASCRIPT]
 	case types.PYTHON:
