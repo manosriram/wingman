@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"errors"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/manosriram/wingman/internal/types"
@@ -20,4 +23,34 @@ func GetLanguage(path string) types.Language {
 		return types.JAVASCRIPT
 	}
 	return types.UNKNOWN
+}
+
+func FindGoModPath(startFilePath string) (string, error) {
+	dir := startFilePath
+	fi, err := os.Stat(startFilePath)
+	if err != nil {
+		return "", err
+	}
+	if !fi.IsDir() {
+		dir = filepath.Dir(startFilePath)
+	}
+
+	for {
+		candidate := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir { // root
+			break
+		}
+		dir = parent
+	}
+
+	return "", errors.New("go.mod not found in any parent directory")
+}
+
+func ReadGoModFile(path string) ([]byte, error) {
+	return os.ReadFile(path)
 }

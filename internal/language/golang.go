@@ -2,8 +2,6 @@ package language
 
 import (
 	"errors"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/manosriram/wingman/internal/types"
@@ -34,14 +32,6 @@ func NewGolangStrategy(args StrategyArgs) *GolangStrategy {
 		NodePath: args.NodePath,
 		Parser:   args.Parser,
 	}
-}
-
-func readGoModFile() ([]byte, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-	return os.ReadFile(fmt.Sprintf("%s/go.mod", wd))
 }
 
 func (g *GolangStrategy) resolveImportNodes(args ResolveImportNodesArgs) []types.NodeImport {
@@ -114,7 +104,11 @@ func (g *GolangStrategy) GetNodeImportList() ([]types.NodeImport, error) {
 	}
 	defer tree.Close()
 
-	modFile, err := readGoModFile()
+	modFilePath, err := utils.FindGoModPath(g.NodePath)
+	if err != nil {
+		return []types.NodeImport{}, errors.New("Error reading go.mod file")
+	}
+	modFile, err := utils.ReadGoModFile(modFilePath)
 	if err != nil {
 		return []types.NodeImport{}, errors.New("Error reading go.mod file")
 	}
