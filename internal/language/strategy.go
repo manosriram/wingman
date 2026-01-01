@@ -21,6 +21,14 @@ type LangStrategy interface {
 	resolveImportNodes(ResolveImportNodesArgs) []types.NodeImport
 }
 
+func GetStrategy(args StrategyArgs) LangStrategy {
+	switch args.StrategyLanguage {
+	case types.GOLANG:
+		return NewGolangStrategy(args)
+	}
+	return NewDefaultStrategy(args)
+}
+
 type StrategyArgs struct {
 	NodeData         []byte
 	NodePath         string
