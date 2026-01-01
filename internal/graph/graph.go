@@ -5,7 +5,7 @@ import (
 )
 
 type GraphNode struct {
-	NodeValue string // interface?
+	NodeValue string
 }
 
 func NewGraphNode(nodeValue string) GraphNode {
@@ -51,8 +51,6 @@ func (d *Graph) GetInNodesOfNode(nodeKey string) []string {
 
 	return inNodes
 }
-
-func (d *Graph) removeEdge(src, dest GraphNode) {}
 
 func (d *Graph) BuildGraphFromImports(imports []types.NodeImport) {
 	for _, i := range imports {

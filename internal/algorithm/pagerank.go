@@ -26,30 +26,26 @@ func NewPageRankAlgorithm() *PageRankAlgorithm {
 
 func (p *PageRankAlgorithm) CalculateScore(graph *graph.Graph) {
 	d := 0.85
-	iters := 50
+	iters := 100
 	N := len(graph.G)
 	if N == 0 {
 		return
 	}
 	n := float64(N)
 
-	// prev and next rank vectors
 	prev := make(map[string]float64, N)
 	next := make(map[string]float64, N)
 
-	// init uniform
 	for node := range graph.G {
 		prev[node] = 1.0 / n
 	}
 
 	for range iters {
-		// base teleportation
 		base := (1.0 - d) / n
 		for node := range graph.G {
 			next[node] = base
 		}
 
-		// dangling mass (nodes with outDegree 0)
 		var dangling float64
 		for v := range graph.G {
 			out := len(graph.G[v])
@@ -58,7 +54,6 @@ func (p *PageRankAlgorithm) CalculateScore(graph *graph.Graph) {
 			}
 		}
 
-		// distribute rank along edges
 		for v, outs := range graph.G {
 			outDegree := len(outs)
 			if outDegree == 0 {
@@ -66,12 +61,10 @@ func (p *PageRankAlgorithm) CalculateScore(graph *graph.Graph) {
 			}
 			share := d * prev[v] / float64(outDegree)
 			for _, u := range outs {
-				// u.NodeValue is the destination key
 				next[u.NodeValue] += share
 			}
 		}
 
-		// redistribute dangling mass uniformly
 		if dangling != 0 {
 			add := d * dangling / n
 			for node := range graph.G {
@@ -79,7 +72,6 @@ func (p *PageRankAlgorithm) CalculateScore(graph *graph.Graph) {
 			}
 		}
 
-		// swap prev/next
 		prev, next = next, prev
 	}
 

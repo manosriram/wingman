@@ -13,6 +13,10 @@ import (
 	"github.com/manosriram/wingman/internal/utils"
 )
 
+func (r *Repository) walkDirAndPopulateNodeImports() error {
+	return filepath.WalkDir(r.TargetDir, r.populateRepositoryNodeImports)
+}
+
 func (r *Repository) populateRepositoryNodeImports(path string, d fs.DirEntry, err error) error {
 	if d.IsDir() {
 		if d.Name() == ".git" || d.Name() == ".aider" {
