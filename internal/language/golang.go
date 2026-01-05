@@ -53,7 +53,10 @@ func (g *GolangStrategy) resolveImportNodes(args ResolveImportNodesArgs) []types
 					if strings.HasPrefix(importPath, modFileData) {
 						importPath, found := strings.CutPrefix(importPath, modFileData)
 						if found {
-							importPath = strings.Split(strings.TrimLeft(importPath, "/"), "/")[1]
+							importPathSplit := strings.Split(strings.TrimLeft(importPath, "/"), "/")
+							if len(importPathSplit) > 1 {
+								importPath = importPathSplit[1]
+							} /*  else { */
 						}
 						imports = append(imports, types.NodeImport{
 							ImportPackage: importPath,
@@ -79,7 +82,10 @@ func (g *GolangStrategy) resolveImportNodes(args ResolveImportNodesArgs) []types
 
 									importPath, found := strings.CutPrefix(importPath, modFileData)
 									if found {
-										importPath = strings.Split(strings.TrimLeft(importPath, "/"), "/")[1]
+										importPathSplit := strings.Split(strings.TrimLeft(importPath, "/"), "/")
+										if len(importPathSplit) > 1 {
+											importPath = importPathSplit[1]
+										}
 									}
 									imports = append(imports, types.NodeImport{
 										ImportPackage: importPath,

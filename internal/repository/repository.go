@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"fmt"
+
 	"github.com/manosriram/wingman/internal/ast"
 	"github.com/manosriram/wingman/internal/graph"
 	"github.com/manosriram/wingman/internal/types"
@@ -33,15 +35,18 @@ func (r *Repository) Run() error {
 	for _, v := range r.NodeImports {
 		r.Graph.BuildGraphFromImports(v)
 	}
+	// fmt.Println(r.NodeImports)
+
 	for k := range r.NodeImports {
 		err = r.RepositoryNodesAST[k].CalculateASTNodesScore(r.Graph)
 		if err != nil {
 			return err
 		}
 	}
-	// for k := range r.NodeImports {
-	// fmt.Printf("path = %s, score = %f\n", k, r.RepositoryNodesAST[k].Algorithm.NodeScores[k])
-	// }
+
+	for k := range r.NodeImports {
+		fmt.Printf("path = %s, score = %f\n", k, r.RepositoryNodesAST[k].Algorithm.NodeScores[k])
+	}
 
 	return err
 }

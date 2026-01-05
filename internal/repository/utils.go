@@ -2,11 +2,11 @@ package repository
 
 import (
 	"bufio"
+	"fmt"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/manosriram/wingman/internal/ast"
 	"github.com/manosriram/wingman/internal/types"
@@ -42,19 +42,23 @@ func (r *Repository) populateRepositoryNodeImports(path string, d fs.DirEntry, e
 				log.Fatal(err)
 			}
 
-			if utils.GetLanguage(path) == types.GOLANG && len(strings.Split(pkg, " ")) > 1 {
-				pkg = strings.Split(pkg, " ")[1]
-			}
-		} else {
-			pkg = path
+			// if utils.GetLanguage(path) == types.GOLANG && len(strings.Split(pkg, " ")) > 1 {
+			// pkg = strings.Split(pkg, " ")[1]
+			// }
 		}
+		// } else {
+		// pkg = path
+		// }
 
-		r.RepositoryNodesAST[pkg] = ast.NewAST(path, r.TreeSitterLanguageParser)
-		imports, err := r.RepositoryNodesAST[pkg].GetNodeImports()
-		if err != nil {
-			return err
+		if pkg != "" {
+			fmt.Println(path)
+			r.RepositoryNodesAST[path] = ast.NewAST(path, r.TreeSitterLanguageParser)
+			imports, err := r.RepositoryNodesAST[path].GetNodeImports()
+			if err != nil {
+				return err
+			}
+			r.NodeImports[path] = imports
 		}
-		r.NodeImports[pkg] = imports
 	}
 	return nil
 }
