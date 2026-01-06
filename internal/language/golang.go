@@ -2,6 +2,7 @@ package language
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/manosriram/wingman/internal/types"
@@ -35,69 +36,22 @@ func NewGolangStrategy(args StrategyArgs) *GolangStrategy {
 }
 
 func (g *GolangStrategy) resolveImportNodes(args ResolveImportNodesArgs) []types.NodeImport {
+
 	rootNode := args.RootNode
-	modFileData := args.GolangModFileData
+	// modFileData := args.GolangModFileData
+
+	if rootNode.Kind() == "call_expression" {
+		funcNode := rootNode.ChildByFieldName("function")
+		if funcNode != nil {
+			fmt.Println("call_expression found:", string(g.NodeData[funcNode.StartByte():funcNode.EndByte()]))
+		}
+	}
 
 	imports := []types.NodeImport{}
 	for i := uint(0); i < rootNode.ChildCount(); i++ {
 		child := rootNode.Child(i)
-
-		// Check if the node is an import_declaration
-		if child.Kind() == "import_declaration" {
-			importSpec := child.ChildByFieldName("spec")
-			if importSpec != nil && importSpec.Kind() == "import_spec" {
-				path := importSpec.ChildByFieldName("path")
-				if path != nil {
-					importPath := strings.Trim(string(g.NodeData[path.StartByte():path.EndByte()]), "\"")
-					// If the import is internal, get the import pkg and add it to "imports"
-					if strings.HasPrefix(importPath, modFileData) {
-						importPath, found := strings.CutPrefix(importPath, modFileData)
-						if found {
-							importPathSplit := strings.Split(strings.TrimLeft(importPath, "/"), "/")
-							if len(importPathSplit) > 1 {
-								importPath = importPathSplit[1]
-							} /*  else { */
-						}
-						imports = append(imports, types.NodeImport{
-							ImportPackage: importPath,
-							FilePath:      g.NodePath,
-						})
-					}
-				}
-			}
-
-			// Handle grouped imports: import ( ... )
-			for j := uint(0); j < child.ChildCount(); j++ {
-				specList := child.Child(j)
-				if specList.Kind() == "import_spec_list" {
-					for k := uint(0); k < specList.ChildCount(); k++ {
-						spec := specList.Child(k)
-						if spec.Kind() == "import_spec" {
-							path := spec.ChildByFieldName("path")
-							if path != nil {
-								importPath := strings.Trim(string(g.NodeData[path.StartByte():path.EndByte()]), "\"")
-
-								// Only if the import is internal
-								if strings.HasPrefix(importPath, modFileData) {
-
-									importPath, found := strings.CutPrefix(importPath, modFileData)
-									if found {
-										importPathSplit := strings.Split(strings.TrimLeft(importPath, "/"), "/")
-										if len(importPathSplit) > 1 {
-											importPath = importPathSplit[1]
-										}
-									}
-									imports = append(imports, types.NodeImport{
-										ImportPackage: importPath,
-										FilePath:      g.NodePath,
-									})
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+		args.RootNode = child
+		g.resolveImportNodes(args)
 	}
 	return imports
 }

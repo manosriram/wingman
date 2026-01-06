@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	TARGET_DIR     = "/Users/manosriram/go/src/go2java"
+	TARGET_DIR     = "/Users/manosriram/go/src/syncthing/"
 	TARGET_GO_NODE = "../internal/repository/repository.go"
 )
 

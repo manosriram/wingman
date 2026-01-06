@@ -26,7 +26,7 @@ func NewPageRankAlgorithm() *PageRankAlgorithm {
 
 func (p *PageRankAlgorithm) CalculateScore(graph *graph.Graph) {
 	d := 0.85
-	iters := 100
+	iters := 10
 	N := len(graph.G)
 	if N == 0 {
 		return

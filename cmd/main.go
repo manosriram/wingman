@@ -13,8 +13,8 @@ func main() {
 	// }
 	// targetDir := wd
 
-	// targetDir := "/Users/manosriram/go/src/syncthing/"
-	targetDir := "./"
+	targetDir := "/Users/manosriram/go/src/tttt"
+	// targetDir := "./"
 
 	err := repository.NewRepository(targetDir).Run()
 	if err != nil {
