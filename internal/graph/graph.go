@@ -1,8 +1,6 @@
 package graph
 
 import (
-	"fmt"
-
 	"github.com/manosriram/wingman/internal/types"
 )
 
@@ -56,8 +54,6 @@ func (d *Graph) GetInNodesOfNode(nodeKey string) []string {
 
 func (d *Graph) BuildGraphFromImports(imports []types.NodeImport) {
 	for _, i := range imports {
-		fmt.Println("src = ", i.ImportPackage)
-		fmt.Println("dest = ", i.FilePath)
 		d.addEdge(
 			NewGraphNode(i.ImportPackage),
 			NewGraphNode(i.FilePath),

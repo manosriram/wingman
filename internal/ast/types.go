@@ -15,7 +15,7 @@ type AST struct {
 	NodePath         string
 	NodeData         []byte
 	NodeLanguage     types.Language
-	Signatures       map[string]Signature
+	PkgPaths         map[string][]string
 	Algorithm        *algorithm.PageRankAlgorithm
 	LanguageStrategy *language.LangStrategy
 }
