@@ -2,10 +2,12 @@ package language
 
 import (
 	"errors"
+	"slices"
 	"strings"
 
 	"github.com/manosriram/wingman/internal/types"
 	"github.com/manosriram/wingman/internal/utils"
+	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 /*
@@ -22,7 +24,9 @@ GolangStrategy implements LangStrategy.
 type GolangStrategy struct {
 	NodeData []byte
 	NodePath string
+	PkgPaths map[string][]string
 	Parser   utils.TreeSitterParserType
+	Visit    map[*tree_sitter.Node]bool
 }
 
 // func NewGolangStrategy(data []byte, path string, parser utils.TreeSitterParserType) *GolangStrategy {
@@ -31,68 +35,56 @@ func NewGolangStrategy(args StrategyArgs) *GolangStrategy {
 		NodeData: args.NodeData,
 		NodePath: args.NodePath,
 		Parser:   args.Parser,
+		Visit:    make(map[*tree_sitter.Node]bool),
+		PkgPaths: args.PkgPaths,
 	}
 }
 
 func (g *GolangStrategy) resolveImportNodes(args ResolveImportNodesArgs) []types.NodeImport {
+
 	rootNode := args.RootNode
-	modFileData := args.GolangModFileData
+
+	g.Visit[rootNode] = true
+	// modFileData := args.GolangModFileData
 
 	imports := []types.NodeImport{}
-	for i := uint(0); i < rootNode.ChildCount(); i++ {
-		child := rootNode.Child(i)
 
-		// Check if the node is an import_declaration
-		if child.Kind() == "import_declaration" {
-			importSpec := child.ChildByFieldName("spec")
-			if importSpec != nil && importSpec.Kind() == "import_spec" {
-				path := importSpec.ChildByFieldName("path")
-				if path != nil {
-					importPath := strings.Trim(string(g.NodeData[path.StartByte():path.EndByte()]), "\"")
-					// If the import is internal, get the import pkg and add it to "imports"
-					if strings.HasPrefix(importPath, modFileData) {
-						importPath, found := strings.CutPrefix(importPath, modFileData)
-						if found {
-							importPath = strings.Split(strings.TrimLeft(importPath, "/"), "/")[1]
-						}
-						imports = append(imports, types.NodeImport{
-							ImportPackage: importPath,
+	if rootNode.Kind() == "call_expression" {
+		funcNode := rootNode.ChildByFieldName("function")
+		if funcNode != nil {
+			callExpr := string(g.NodeData[funcNode.StartByte():funcNode.EndByte()])
+			if strings.Contains(callExpr, ".") {
+				pkg := strings.Split(callExpr, ".")[0]
+
+				// We now know which file/pkgs this imports from
+				// Build the graph upon this knowledge, such that the imports being populated are meaningful
+				// Return valid imports from this function on calculation, and the graph should build itself correctly
+				if _, ok := g.PkgPaths[pkg]; ok {
+					for _, z := range g.PkgPaths[pkg] {
+						n := types.NodeImport{
+							ImportPackage: z,
 							FilePath:      g.NodePath,
-						})
-					}
-				}
-			}
+						}
 
-			// Handle grouped imports: import ( ... )
-			for j := uint(0); j < child.ChildCount(); j++ {
-				specList := child.Child(j)
-				if specList.Kind() == "import_spec_list" {
-					for k := uint(0); k < specList.ChildCount(); k++ {
-						spec := specList.Child(k)
-						if spec.Kind() == "import_spec" {
-							path := spec.ChildByFieldName("path")
-							if path != nil {
-								importPath := strings.Trim(string(g.NodeData[path.StartByte():path.EndByte()]), "\"")
-
-								// Only if the import is internal
-								if strings.HasPrefix(importPath, modFileData) {
-
-									importPath, found := strings.CutPrefix(importPath, modFileData)
-									if found {
-										importPath = strings.Split(strings.TrimLeft(importPath, "/"), "/")[1]
-									}
-									imports = append(imports, types.NodeImport{
-										ImportPackage: importPath,
-										FilePath:      g.NodePath,
-									})
-								}
-							}
+						if !slices.Contains(imports, n) {
+							imports = append(imports, n)
 						}
 					}
 				}
 			}
 		}
 	}
+
+	for i := uint(0); i < rootNode.ChildCount(); i++ {
+		args.RootNode = rootNode.Child(i)
+		imports = append(imports, g.resolveImportNodes(args)...)
+		// for _, i := range imports {
+		// if !slices.Contains(im, i) {
+		// imports = append(imports, i)
+		// }
+		// }
+	}
+	g.Visit[rootNode] = false
 	return imports
 }
 

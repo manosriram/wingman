@@ -33,6 +33,7 @@ type StrategyArgs struct {
 	NodeData         []byte
 	NodePath         string
 	Parser           utils.TreeSitterParserType
+	PkgPaths         map[string][]string
 	StrategyLanguage types.Language
 }
 

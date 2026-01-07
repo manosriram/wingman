@@ -12,7 +12,7 @@ import (
 	"github.com/manosriram/wingman/internal/utils"
 )
 
-func NewAST(nodePath string, parser utils.TreeSitterParserType) *AST {
+func NewAST(nodePath string, PkgPaths map[string][]string, parser utils.TreeSitterParserType) *AST {
 	data, err := os.ReadFile(nodePath)
 	if err != nil {
 		log.Fatalf("Error initializing AST")
@@ -22,7 +22,7 @@ func NewAST(nodePath string, parser utils.TreeSitterParserType) *AST {
 		NodePath:     nodePath,
 		NodeLanguage: utils.GetLanguage(nodePath),
 		Parser:       parser,
-		Signatures:   make(map[string]Signature),
+		PkgPaths:     PkgPaths,
 		Algorithm:    algorithm.NewPageRankAlgorithm(),
 	}
 }
@@ -32,6 +32,7 @@ func (a *AST) GetNodeImports() ([]types.NodeImport, error) {
 		NodeData:         a.NodeData,
 		NodePath:         a.NodePath,
 		Parser:           a.Parser,
+		PkgPaths:         a.PkgPaths,
 		StrategyLanguage: utils.GetLanguage(a.NodePath),
 	}).GetNodeImportList()
 }

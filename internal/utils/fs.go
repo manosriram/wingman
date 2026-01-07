@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/manosriram/wingman/internal/types"
 )
@@ -15,14 +14,16 @@ func WalkDir(targetDir string, f func(path string, d fs.DirEntry, err error)) er
 }
 
 func GetLanguage(path string) types.Language {
-	if strings.HasSuffix(path, ".go") {
+	switch filepath.Ext(path) {
+	case ".go":
 		return types.GOLANG
-	} else if strings.HasSuffix(path, ".py") {
+	case ".py":
 		return types.PYTHON
-	} else if strings.HasSuffix(path, ".js") {
+	case ".js":
 		return types.JAVASCRIPT
+	default:
+		return types.UNKNOWN
 	}
-	return types.UNKNOWN
 }
 
 func FindGoModPath(startFilePath string) (string, error) {
