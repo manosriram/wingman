@@ -24,6 +24,10 @@ func NewPageRankAlgorithm() *PageRankAlgorithm {
 	}
 }
 
+func (p *PageRankAlgorithm) GetScoreForNode(node string) float64 {
+	return p.NodeScores[node]
+}
+
 func (p *PageRankAlgorithm) CalculateScore(graph *graph.Graph) {
 	d := 0.85
 	iters := 10

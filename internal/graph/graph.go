@@ -55,8 +55,8 @@ func (d *Graph) GetInNodesOfNode(nodeKey string) []string {
 func (d *Graph) BuildGraphFromImports(imports []types.NodeImport) {
 	for _, i := range imports {
 		d.addEdge(
-			NewGraphNode(i.ImportPackage),
 			NewGraphNode(i.FilePath),
+			NewGraphNode(i.ImportPackage),
 		)
 	}
 }

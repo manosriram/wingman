@@ -7,5 +7,6 @@ import (
 
 type ContextAlgorithm interface {
 	CalculateScore(*graph.Graph)
+	GetScoreForNode(string) float64
 	GetAlgorithmType() types.ContextAlgorithmType
 }
