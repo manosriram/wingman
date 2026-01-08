@@ -2,12 +2,15 @@ package repository
 
 import (
 	"fmt"
+	"os"
 	"sort"
 
 	"github.com/manosriram/wingman/internal/ast"
 	"github.com/manosriram/wingman/internal/graph"
+	"github.com/manosriram/wingman/internal/llm"
 	"github.com/manosriram/wingman/internal/types"
 	"github.com/manosriram/wingman/internal/utils"
+	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type Repository struct {
@@ -17,6 +20,7 @@ type Repository struct {
 	PkgPaths                 map[string][]string
 	NodeImports              map[string][]types.NodeImport // Pkg vs Imports
 	RepositoryNodesAST       map[string]*ast.AST
+	Signatures               map[string][]string
 }
 
 type KeyValue struct {
@@ -34,7 +38,47 @@ func NewRepository(targetDir string) *Repository {
 		NodeImports:              make(map[string][]types.NodeImport),
 		RepositoryNodesAST:       make(map[string]*ast.AST),
 		PkgPaths:                 make(map[string][]string),
+		Signatures:               make(map[string][]string),
 	}
+}
+
+func getFunctionInfo(node *tree_sitter.Node, source []byte) (name string, params string) {
+	if nameNode := node.ChildByFieldName("name"); nameNode != nil {
+		name = string(source[nameNode.StartByte():nameNode.EndByte()])
+	}
+	if paramsNode := node.ChildByFieldName("parameters"); paramsNode != nil {
+		params = string(source[paramsNode.StartByte():paramsNode.EndByte()])
+	}
+	return name, params
+}
+
+func getNodeSignatures(node *tree_sitter.Node, source []byte) []string {
+	var signatures []string
+
+	if node.Kind() == "function_declaration" || node.Kind() == "method_declaration" {
+		// Extract the signature text (from start to the opening brace)
+		// Or extract individual parts: name, parameters, result
+
+		fnName, fnParams := getFunctionInfo(node, source)
+
+		signatures = append(signatures, fnName+fnParams)
+	}
+
+	for i := uint(0); i < node.ChildCount(); i++ {
+		signatures = append(signatures, getNodeSignatures(node.Child(i), source)...)
+	}
+	return signatures
+}
+
+func (r *Repository) GetNodeSignatures(path string) []string {
+	p := r.TreeSitterLanguageParser.Parsers[types.GOLANG]
+
+	d, _ := os.ReadFile(path)
+
+	tree := p.Parse(d, nil)
+	root := tree.RootNode()
+
+	return getNodeSignatures(root, d)
 }
 
 func (r *Repository) Run() error {
@@ -74,7 +118,12 @@ func (r *Repository) Run() error {
 
 	for _, v := range sorted {
 		fmt.Println(v.Key, v.Value)
+		r.Signatures[v.Key] = r.GetNodeSignatures(v.Key)
 	}
+
+	prompt := llm.CreateMasterPrompt(r.Signatures)
+
+	fmt.Println(prompt)
 
 	/* TODO
 	We now have scores and the file paths.

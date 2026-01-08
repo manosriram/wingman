@@ -19,7 +19,11 @@ type NodeImport struct {
 const (
 	BASE_LLM_PROMPT = `
 
-	The above is the context of the repository. Answer all the questions in a simple and understandable way. If you need any other files for more context, do ask.
+	The above is the context of the repository. Answer all the questions in a simple and understandable way. If you want more context, ask to add more files in this format:
+	ADD <path>
+
+	For example:
+	ADD /a/b/c.go
 
 	`
 )

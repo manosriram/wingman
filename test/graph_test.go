@@ -11,7 +11,7 @@ import (
 
 func Test_BuildGraph(t *testing.T) {
 	treeSitterLanguageParser := utils.NewTreeSitterParserType()
-	a := ast.NewAST(TARGET_GO_NODE, treeSitterLanguageParser)
+	a := ast.NewAST(TARGET_GO_NODE, nil, treeSitterLanguageParser)
 	assert.NotNil(t, a)
 
 	imports, err := a.GetNodeImports()

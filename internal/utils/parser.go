@@ -10,7 +10,7 @@ import (
 
 type TreeSitterParserType struct {
 	Language types.Language
-	parsers  map[types.Language]*tree_sitter.Parser
+	Parsers  map[types.Language]*tree_sitter.Parser
 }
 
 func NewTreeSitterParserType() TreeSitterParserType {
@@ -33,18 +33,18 @@ func NewTreeSitterParserType() TreeSitterParserType {
 	parsers[types.PYTHON] = pythonParser
 
 	return TreeSitterParserType{
-		parsers: parsers,
+		Parsers: parsers,
 	}
 }
 
 func (p TreeSitterParserType) GetLanguageParser(language types.Language) *tree_sitter.Parser {
 	switch language {
 	case types.GOLANG:
-		return p.parsers[types.GOLANG]
+		return p.Parsers[types.GOLANG]
 	case types.JAVASCRIPT:
-		return p.parsers[types.JAVASCRIPT]
+		return p.Parsers[types.JAVASCRIPT]
 	case types.PYTHON:
-		return p.parsers[types.PYTHON]
+		return p.Parsers[types.PYTHON]
 	}
 	return nil
 }
