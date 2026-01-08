@@ -16,7 +16,7 @@ const (
 
 func Test_GetNodeImportsShouldReturnNonEmpty(t *testing.T) {
 	treeSitterLanguageParser := utils.NewTreeSitterParserType()
-	imports, err := ast.NewAST(TARGET_GO_NODE, treeSitterLanguageParser).GetNodeImports()
+	imports, err := ast.NewAST(TARGET_GO_NODE, nil, treeSitterLanguageParser).GetNodeImports()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, imports)
 
@@ -29,7 +29,7 @@ func Test_GetNodeImportsShouldReturnNonEmpty(t *testing.T) {
 
 func Test_CalculateASTNodesScore(t *testing.T) {
 	treeSitterLanguageParser := utils.NewTreeSitterParserType()
-	a := ast.NewAST(TARGET_GO_NODE, treeSitterLanguageParser)
+	a := ast.NewAST(TARGET_GO_NODE, nil, treeSitterLanguageParser)
 	imports, err := a.GetNodeImports()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, imports)
