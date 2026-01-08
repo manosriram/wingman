@@ -3,3 +3,5 @@
 wingman is an AI code helper to make writing and understand coderepos easier via LLMs.
 
 README to be updated.
+
+[Trello Board](https://trello.com/b/6K722JBf/wingman)
