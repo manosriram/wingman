@@ -123,7 +123,12 @@ func (r *Repository) Run() error {
 
 	prompt := llm.CreateMasterPrompt(r.Signatures)
 
-	fmt.Println(prompt)
+	selectedLLM := "claude"
+	// selectedModel := "opus_5_2"
+
+	response, err := llm.GetLLM(selectedLLM, prompt, llm.OPUS_4_5).Call()
+
+	fmt.Println(response, err)
 
 	/* TODO
 	We now have scores and the file paths.

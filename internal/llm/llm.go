@@ -28,7 +28,19 @@ type LLM interface {
 	GetMaxTokenCount(string) int64
 	GetSelectedModel() LLMModel
 	GetInputTokenCount() int
-	Call() LLMResponse
+	Call() (LLMResponse, error)
+}
+
+func GetLLM(llmPlatform, input string, model LLMModel) LLM {
+	switch llmPlatform {
+	case string(CLAUDE):
+		return NewClaudeLLM(model, input)
+	case string(OPENAI):
+		break
+	default:
+		break
+	}
+	return ClaudeLLM{}
 }
 
 // TODO: add token count check
