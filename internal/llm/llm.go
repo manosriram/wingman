@@ -34,7 +34,7 @@ type LLM interface {
 func GetLLM(llmPlatform, input string, model LLMModel) LLM {
 	switch llmPlatform {
 	case string(CLAUDE):
-		return NewClaudeLLM(model, input)
+		return NewClaudeLLM(LLMRequest{Model: model, Input: input})
 	case string(OPENAI):
 		break
 	default:
@@ -44,7 +44,7 @@ func GetLLM(llmPlatform, input string, model LLMModel) LLM {
 }
 
 // TODO: add token count check
-func CreateMasterPrompt(signatures map[string][]string) string {
+func CreateMasterPrompt(signatures map[string][]string, input string) string {
 	var prompt strings.Builder
 	prompt.WriteString(types.BASE_LLM_PROMPT)
 
@@ -55,5 +55,5 @@ func CreateMasterPrompt(signatures map[string][]string) string {
 		}
 		prompt.WriteString("\n")
 	}
-	return prompt.String()
+	return prompt.String() + "\n\n\n" + input
 }

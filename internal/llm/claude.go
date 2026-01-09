@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -119,6 +120,7 @@ func (c *Client) SendMessage(req Request) (*Response, error) {
 	return &apiResp, nil
 }
 
+// TODO: read stream response
 func (c *Client) SendPrompt(prompt string) (string, error) {
 	req := Request{
 		Model:     "claude-sonnet-4-20250514",
@@ -158,11 +160,17 @@ type ClaudeLLM struct {
 	Client        *Client
 }
 
-func NewClaudeLLM(model LLMModel, input string) ClaudeLLM {
+type LLMRequest struct {
+	Model LLMModel
+	Input string
+}
+
+func NewClaudeLLM(req LLMRequest) ClaudeLLM {
 	c := NewClient("")
+
 	return ClaudeLLM{
-		SelectedModel: model,
-		Input:         input,
+		SelectedModel: req.Model,
+		Input:         req.Input,
 		Client:        c,
 	}
 }
@@ -180,10 +188,23 @@ func (c ClaudeLLM) GetInputTokenCount() int {
 }
 
 func (c ClaudeLLM) Call() (LLMResponse, error) {
-	response, err := c.Client.SendPrompt(c.Input)
+	wd, err := os.Getwd()
 	if err != nil {
 		return LLMResponse{}, err
 	}
+
+	f, err := os.OpenFile(wd+"/wingman.md", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+
+	}
+	defer f.Close()
+
+	response, err := c.Client.SendPrompt(c.Input)
+	if _, err = f.WriteString(response); err != nil {
+		panic(err)
+	}
+
 	return LLMResponse{
 		Response: response,
 	}, nil

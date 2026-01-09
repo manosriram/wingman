@@ -1,13 +1,11 @@
 package repository
 
 import (
-	"fmt"
 	"os"
 	"sort"
 
 	"github.com/manosriram/wingman/internal/ast"
 	"github.com/manosriram/wingman/internal/graph"
-	"github.com/manosriram/wingman/internal/llm"
 	"github.com/manosriram/wingman/internal/types"
 	"github.com/manosriram/wingman/internal/utils"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
@@ -117,18 +115,8 @@ func (r *Repository) Run() error {
 	})
 
 	for _, v := range sorted {
-		fmt.Println(v.Key, v.Value)
 		r.Signatures[v.Key] = r.GetNodeSignatures(v.Key)
 	}
-
-	prompt := llm.CreateMasterPrompt(r.Signatures)
-
-	selectedLLM := "claude"
-	// selectedModel := "opus_5_2"
-
-	response, err := llm.GetLLM(selectedLLM, prompt, llm.OPUS_4_5).Call()
-
-	fmt.Println(response, err)
 
 	/* TODO
 	We now have scores and the file paths.
