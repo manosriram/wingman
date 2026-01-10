@@ -8,16 +8,24 @@ import (
 	"net/http"
 	"os"
 	"strings"
-)
 
-const (
-	APIBaseURL = "https://api.anthropic.com/v1/messages"
-	APIVersion = "2023-06-01"
+	"github.com/manosriram/wingman/internal/types"
 )
 
 type Client struct {
 	APIKey     string
 	HTTPClient *http.Client
+}
+
+type Response struct {
+	ID           string               `json:"id"`
+	Type         string               `json:"type"`
+	Role         string               `json:"role"`
+	Content      []types.ContentBlock `json:"content"`
+	Model        string               `json:"model"`
+	StopReason   string               `json:"stop_reason"`
+	StopSequence string               `json:"stop_sequence"`
+	Usage        types.Usage          `json:"usage"`
 }
 
 func NewClient(apiKey string) *Client {
@@ -27,51 +35,7 @@ func NewClient(apiKey string) *Client {
 	}
 }
 
-type ContentBlock struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
-}
-
-type Message struct {
-	Role    string `json:"role"` // "user" or "assistant"
-	Content string `json:"content"`
-}
-
-type Usage struct {
-	InputTokens  int `json:"input_tokens"`
-	OutputTokens int `json:"output_tokens"`
-}
-
-type ErrorResponse struct {
-	Type  string `json:"type"`
-	Error struct {
-		Type    string `json:"type"`
-		Message string `json:"message"`
-	} `json:"error"`
-}
-
-type Response struct {
-	ID           string         `json:"id"`
-	Type         string         `json:"type"`
-	Role         string         `json:"role"`
-	Content      []ContentBlock `json:"content"`
-	Model        string         `json:"model"`
-	StopReason   string         `json:"stop_reason"`
-	StopSequence string         `json:"stop_sequence"`
-	Usage        Usage          `json:"usage"`
-}
-
-type Request struct {
-	Model       string    `json:"model"`
-	MaxTokens   int       `json:"max_tokens"`
-	Messages    []Message `json:"messages"`
-	Temperature float64   `json:"temperature,omitempty"`
-	TopP        float64   `json:"top_p,omitempty"`
-	TopK        int       `json:"top_k,omitempty"`
-	System      string    `json:"system,omitempty"`
-}
-
-func (c *Client) SendMessage(req Request) (*Response, error) {
+func (c *Client) SendMessage(req types.Request) (*Response, error) {
 	// Marshal request to JSON
 	jsonData, err := json.Marshal(req)
 	if err != nil {
@@ -79,7 +43,7 @@ func (c *Client) SendMessage(req Request) (*Response, error) {
 	}
 
 	// Create HTTP request
-	httpReq, err := http.NewRequest("POST", APIBaseURL, bytes.NewBuffer(jsonData))
+	httpReq, err := http.NewRequest("POST", types.APIBaseURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -87,7 +51,7 @@ func (c *Client) SendMessage(req Request) (*Response, error) {
 	// Set headers
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("x-api-key", c.APIKey)
-	httpReq.Header.Set("anthropic-version", APIVersion)
+	httpReq.Header.Set("anthropic-version", types.APIVersion)
 
 	// Send request
 	resp, err := c.HTTPClient.Do(httpReq)
@@ -104,7 +68,7 @@ func (c *Client) SendMessage(req Request) (*Response, error) {
 
 	// Check for error response
 	if resp.StatusCode != http.StatusOK {
-		var errResp ErrorResponse
+		var errResp types.ErrorResponse
 		if err := json.Unmarshal(body, &errResp); err != nil {
 			return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
 		}
@@ -122,10 +86,10 @@ func (c *Client) SendMessage(req Request) (*Response, error) {
 
 // TODO: read stream response
 func (c *Client) SendPrompt(prompt string) (string, error) {
-	req := Request{
+	req := types.Request{
 		Model:     "claude-sonnet-4-20250514",
 		MaxTokens: 4096,
-		Messages: []Message{
+		Messages: []types.Message{
 			{
 				Role:    "user",
 				Content: prompt,
@@ -155,23 +119,27 @@ func (r *Response) GetTextResponse() string {
 }
 
 type ClaudeLLM struct {
-	SelectedModel LLMModel
-	Input         string
-	Client        *Client
+	SelectedModel       string
+	Input               string
+	InputWithoutRepoMap string
+	Client              *Client
 }
 
 type LLMRequest struct {
-	Model LLMModel
-	Input string
+	Model               string
+	Input               string
+	InputWithoutRepoMap string
 }
 
 func NewClaudeLLM(req LLMRequest) ClaudeLLM {
-	c := NewClient("")
+	anthropicApiKey := os.Getenv("ANTHROPIC_API_KEY")
+	c := NewClient(anthropicApiKey)
 
 	return ClaudeLLM{
-		SelectedModel: req.Model,
-		Input:         req.Input,
-		Client:        c,
+		SelectedModel:       req.Model,
+		Input:               req.Input,
+		InputWithoutRepoMap: req.InputWithoutRepoMap,
+		Client:              c,
 	}
 }
 
@@ -179,12 +147,32 @@ func (c ClaudeLLM) GetMaxTokenCount(model string) int64 {
 	return 200000
 }
 
-func (c ClaudeLLM) GetSelectedModel() LLMModel {
+func (c ClaudeLLM) GetSelectedModel() string {
 	return c.SelectedModel
 }
 
 func (c ClaudeLLM) GetInputTokenCount() int {
 	return len(strings.Split(c.Input, " "))
+}
+
+func (c ClaudeLLM) WriteToHistory(request string, response LLMResponse) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(wd+"/.wingman.history.md", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	content := fmt.Sprintf("%s\n%s\n\n\n", request, response.Response)
+	if _, err = f.WriteString(content); err != nil {
+		panic(err)
+	}
+
+	return nil
 }
 
 func (c ClaudeLLM) Call() (LLMResponse, error) {
@@ -208,5 +196,4 @@ func (c ClaudeLLM) Call() (LLMResponse, error) {
 	return LLMResponse{
 		Response: response,
 	}, nil
-
 }

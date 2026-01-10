@@ -19,11 +19,11 @@ type NodeImport struct {
 const (
 	BASE_LLM_PROMPT = `
 
-	The above is the context of the repository. Answer all the questions in a simple and understandable way. If you want more context, ask to add more files in this format:
-	ADD <path>
+	The below is the context of the repository. The paths are given along with the signatures of the files. If you want more context for a specific file, ask the user to use this command to add more files in this format:
+	/add <paths>
 
 	For example:
-	ADD /a/b/c.go
+	/add /a/b/c.go /b/c/d.go
 
 	`
 )

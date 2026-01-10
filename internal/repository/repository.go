@@ -6,6 +6,7 @@ import (
 
 	"github.com/manosriram/wingman/internal/ast"
 	"github.com/manosriram/wingman/internal/graph"
+	"github.com/manosriram/wingman/internal/llm"
 	"github.com/manosriram/wingman/internal/types"
 	"github.com/manosriram/wingman/internal/utils"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
@@ -19,6 +20,7 @@ type Repository struct {
 	NodeImports              map[string][]types.NodeImport // Pkg vs Imports
 	RepositoryNodesAST       map[string]*ast.AST
 	Signatures               map[string][]string
+	AddedFiles               map[string]string
 }
 
 type KeyValue struct {
@@ -37,6 +39,7 @@ func NewRepository(targetDir string) *Repository {
 		RepositoryNodesAST:       make(map[string]*ast.AST),
 		PkgPaths:                 make(map[string][]string),
 		Signatures:               make(map[string][]string),
+		AddedFiles:               make(map[string]string),
 	}
 }
 
@@ -130,4 +133,28 @@ func (r *Repository) Run() error {
 	*/
 
 	return nil
+}
+
+func (r *Repository) AddFile(path string) error {
+	d, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	r.AddedFiles[path] = string(d)
+	return nil
+}
+
+func (r *Repository) AddFiles(paths []string) error {
+	for _, path := range paths {
+		d, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		r.AddedFiles[path] = string(d)
+	}
+	return nil
+}
+
+func (r *Repository) CreateMasterPrompt(input string) string {
+	return llm.CreateMasterPrompt(r.Signatures, r.AddedFiles, input)
 }

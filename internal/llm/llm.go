@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/manosriram/wingman/internal/types"
@@ -15,36 +16,30 @@ const (
 	GEMINI LLMFamily = "gemini"
 )
 
-const (
-	OPUS_4_5 LLMModel = "claude_opus_4_5"
-	GPT_5_2  LLMModel = "openai_gpt_5_2"
-)
-
 type LLMResponse struct {
 	Response string
 }
 
 type LLM interface {
 	GetMaxTokenCount(string) int64
-	GetSelectedModel() LLMModel
+	GetSelectedModel() string
 	GetInputTokenCount() int
 	Call() (LLMResponse, error)
+	WriteToHistory(request string, response LLMResponse) error
 }
 
-func GetLLM(llmPlatform, input string, model LLMModel) LLM {
-	switch llmPlatform {
-	case string(CLAUDE):
+func GetLLM(input, model string) LLM {
+	if strings.HasPrefix(string(model), "claude") {
 		return NewClaudeLLM(LLMRequest{Model: model, Input: input})
-	case string(OPENAI):
-		break
-	default:
-		break
+	} else if strings.HasPrefix(string(model), "gpt") {
+		// openai
 	}
+
 	return ClaudeLLM{}
 }
 
 // TODO: add token count check
-func CreateMasterPrompt(signatures map[string][]string, input string) string {
+func CreateMasterPrompt(signatures map[string][]string, addedFiles map[string]string, input string) string {
 	var prompt strings.Builder
 	prompt.WriteString(types.BASE_LLM_PROMPT)
 
@@ -55,5 +50,14 @@ func CreateMasterPrompt(signatures map[string][]string, input string) string {
 		}
 		prompt.WriteString("\n")
 	}
-	return prompt.String() + "\n\n\n" + input
+
+	prompt.WriteString("\n")
+	for path, content := range addedFiles {
+		fmt.Fprintf(&prompt, "%s : %s", path, content)
+		prompt.WriteString("\n")
+	}
+	prompt.WriteString("\n")
+
+	return prompt.String() + "\n\n\n" + "Now answer the below question keeping in mind the above context\n\n" + input
+
 }
