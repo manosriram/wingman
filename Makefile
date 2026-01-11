@@ -5,6 +5,6 @@ run:
 	./wingman
 
 test:
-	go test ./test/... -v
+	go test ./... -v
 
 .PHONY: all test

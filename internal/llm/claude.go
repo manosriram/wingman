@@ -3,6 +3,7 @@ package llm
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -131,10 +132,10 @@ type LLMRequest struct {
 	InputWithoutRepoMap string
 }
 
-func NewClaudeLLM(req LLMRequest) ClaudeLLM {
+func NewClaudeLLM(req LLMRequest) *ClaudeLLM {
 	c := NewClient(os.Getenv("ANTHROPIC_API_KEY"))
 
-	return ClaudeLLM{
+	return &ClaudeLLM{
 		SelectedModel:       req.Model,
 		Input:               req.Input,
 		InputWithoutRepoMap: req.InputWithoutRepoMap,
@@ -154,7 +155,7 @@ func (c ClaudeLLM) GetInputTokenCount() int {
 	return len(strings.Split(c.Input, " "))
 }
 
-func (c ClaudeLLM) WriteToHistory(request string, response LLMResponse) error {
+func (c ClaudeLLM) WriteToHistory(request string, response *LLMResponse) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -162,37 +163,36 @@ func (c ClaudeLLM) WriteToHistory(request string, response LLMResponse) error {
 
 	f, err := os.OpenFile(wd+"/.wingman.history.md", os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		panic(err)
+		return errors.New("Error writing to .wingman.history.md")
 	}
 	defer f.Close()
 
 	content := fmt.Sprintf("%s\n%s\n\n\n", request, response.Response)
 	if _, err = f.WriteString(content); err != nil {
-		panic(err)
+		return errors.New("Error writing to .wingman.history.md")
 	}
 
 	return nil
 }
 
-func (c ClaudeLLM) Call(prompt string) (LLMResponse, error) {
+func (c ClaudeLLM) Call(prompt string) (*LLMResponse, error) {
 	wd, err := os.Getwd()
 	if err != nil {
-		return LLMResponse{}, err
+		return nil, err
 	}
 
 	f, err := os.OpenFile(wd+"/wingman.md", os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		panic(err)
-
+		return nil, errors.New("Error writing to wingman.md")
 	}
 	defer f.Close()
 
 	response, err := c.Client.SendPrompt(prompt)
 	if _, err = f.WriteString(response); err != nil {
-		panic(err)
+		return nil, errors.New("Error writing to wingman.md")
 	}
 
-	return LLMResponse{
+	return &LLMResponse{
 		Response: response,
 	}, nil
 }

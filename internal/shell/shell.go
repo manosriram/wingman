@@ -25,7 +25,7 @@ type Shell struct {
 }
 
 func NewShell(targetDir string) (Shell, error) {
-	modelPtr := flag.String("model", "", "Model of the LLM")
+	modelPtr := flag.String("model", "claude-opus-4-5-20251101", "Model of the LLM")
 	flag.Parse()
 	llm, err := llm.NewLLM(*modelPtr)
 	if err != nil {
@@ -158,14 +158,13 @@ func (s Shell) handleCommand(line string, ch chan<- CmdChannel, output *tview.Te
 			cmdCh.Error = err
 		} else {
 			cmdCh.Response = response.Response
+			ch <- cmdCh
 		}
-
-		ch <- cmdCh
 
 		err = s.LLM.WriteToHistory(input, response)
 		if err != nil {
-			return // TODO: Handle err
+			cmdCh.Error = err
 		}
-
+		ch <- cmdCh
 	}
 }
