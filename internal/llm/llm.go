@@ -26,13 +26,12 @@ type LLM interface {
 	GetMaxTokenCount(string) int64
 	GetSelectedModel() string
 	GetInputTokenCount() int
-	Call(string) (LLMResponse, error)
-	WriteToHistory(request string, response LLMResponse) error
+	Call(string) (*LLMResponse, error)
+	WriteToHistory(request string, response *LLMResponse) error
 }
 
 func NewLLM(model string) (LLM, error) {
 	if strings.HasPrefix(string(model), "claude") {
-		// fmt.Println(os.Getenv("ANTHROPIC_API_KEY"))
 		if os.Getenv("ANTHROPIC_API_KEY") == "" {
 			return nil, errors.New("env ANTHROPIC_API_KEY not set")
 		}
@@ -41,20 +40,7 @@ func NewLLM(model string) (LLM, error) {
 		// openai
 	}
 
-	return ClaudeLLM{}, nil
-}
-
-func GetLLM(input, model string) (LLM, error) {
-	if strings.HasPrefix(string(model), "claude") {
-		if os.Getenv("ANTHROPIC_API_KEY") == "" {
-			return nil, errors.New("env ANTHROPIC_API_KEY not set")
-		}
-		return NewClaudeLLM(LLMRequest{Model: model, Input: input}), nil
-	} else if strings.HasPrefix(string(model), "gpt") {
-		// openai
-	}
-
-	return ClaudeLLM{}, nil
+	return nil, nil
 }
 
 // TODO: add token count check
