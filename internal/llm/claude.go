@@ -132,8 +132,7 @@ type LLMRequest struct {
 }
 
 func NewClaudeLLM(req LLMRequest) ClaudeLLM {
-	anthropicApiKey := os.Getenv("ANTHROPIC_API_KEY")
-	c := NewClient(anthropicApiKey)
+	c := NewClient(os.Getenv("ANTHROPIC_API_KEY"))
 
 	return ClaudeLLM{
 		SelectedModel:       req.Model,
@@ -175,7 +174,7 @@ func (c ClaudeLLM) WriteToHistory(request string, response LLMResponse) error {
 	return nil
 }
 
-func (c ClaudeLLM) Call() (LLMResponse, error) {
+func (c ClaudeLLM) Call(prompt string) (LLMResponse, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return LLMResponse{}, err
@@ -188,7 +187,7 @@ func (c ClaudeLLM) Call() (LLMResponse, error) {
 	}
 	defer f.Close()
 
-	response, err := c.Client.SendPrompt(c.Input)
+	response, err := c.Client.SendPrompt(prompt)
 	if _, err = f.WriteString(response); err != nil {
 		panic(err)
 	}

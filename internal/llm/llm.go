@@ -1,7 +1,9 @@
 package llm
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/manosriram/wingman/internal/types"
@@ -24,18 +26,35 @@ type LLM interface {
 	GetMaxTokenCount(string) int64
 	GetSelectedModel() string
 	GetInputTokenCount() int
-	Call() (LLMResponse, error)
+	Call(string) (LLMResponse, error)
 	WriteToHistory(request string, response LLMResponse) error
 }
 
-func GetLLM(input, model string) LLM {
+func NewLLM(model string) (LLM, error) {
 	if strings.HasPrefix(string(model), "claude") {
-		return NewClaudeLLM(LLMRequest{Model: model, Input: input})
+		// fmt.Println(os.Getenv("ANTHROPIC_API_KEY"))
+		if os.Getenv("ANTHROPIC_API_KEY") == "" {
+			return nil, errors.New("env ANTHROPIC_API_KEY not set")
+		}
+		return NewClaudeLLM(LLMRequest{Model: model}), nil
 	} else if strings.HasPrefix(string(model), "gpt") {
 		// openai
 	}
 
-	return ClaudeLLM{}
+	return ClaudeLLM{}, nil
+}
+
+func GetLLM(input, model string) (LLM, error) {
+	if strings.HasPrefix(string(model), "claude") {
+		if os.Getenv("ANTHROPIC_API_KEY") == "" {
+			return nil, errors.New("env ANTHROPIC_API_KEY not set")
+		}
+		return NewClaudeLLM(LLMRequest{Model: model, Input: input}), nil
+	} else if strings.HasPrefix(string(model), "gpt") {
+		// openai
+	}
+
+	return ClaudeLLM{}, nil
 }
 
 // TODO: add token count check

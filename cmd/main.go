@@ -32,6 +32,9 @@ func main() {
 	}
 	defer ff.Close()
 
-	shell.NewShell(wd).Run()
-	// shell.NewShell("/Users/manosriram/go/src/nimbusdb/").Run()
+	shell, err := shell.NewShell(wd)
+	if err != nil {
+		log.Fatalf("Error initializing wingman:  %s\n", err.Error())
+	}
+	shell.Run()
 }

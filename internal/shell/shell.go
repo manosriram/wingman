@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -20,18 +21,29 @@ type Shell struct {
 	ShellDir   string
 	Flags      ProgramFlags
 	Repository *repository.Repository
+	LLM        llm.LLM
 }
 
-func NewShell(targetDir string) Shell {
+func NewShell(targetDir string) (Shell, error) {
 	modelPtr := flag.String("model", "", "Model of the LLM")
 	flag.Parse()
+	llm, err := llm.NewLLM(*modelPtr)
+	if err != nil {
+		return Shell{}, err
+	}
 
 	return Shell{
 		Flags: ProgramFlags{
 			Model: modelPtr,
 		},
 		ShellDir: targetDir,
-	}
+		LLM:      llm,
+	}, nil
+}
+
+type CmdChannel struct {
+	Response string
+	Error    error
 }
 
 func (s Shell) Run() {
@@ -53,7 +65,7 @@ func (s Shell) Run() {
 		SetLabel("$ ")
 	input.SetFieldBackgroundColor(tcell.ColorBlack)
 
-	ch := make(chan (string))
+	ch := make(chan (CmdChannel))
 
 	input.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEnter {
@@ -71,8 +83,12 @@ func (s Shell) Run() {
 			go func() {
 				go s.handleCommand(cmd, ch, output)
 				result := <-ch
+				if result.Error != nil {
+					// log.Fatalf("Error %s", result.Error.Error())
+					fmt.Fprintf(output, "%s\n", result.Error.Error())
+				}
 				app.QueueUpdateDraw(func() {
-					fmt.Fprintf(output, "%s\n", result)
+					fmt.Fprintf(output, "%s\n", result.Response)
 					fmt.Fprintf(output, "\n-------------------------------------------------------------------------------------------------------------------------------------------------------\n")
 					output.ScrollToEnd()
 				})
@@ -106,7 +122,7 @@ func (s Shell) Run() {
 	app.SetRoot(flex, true).SetFocus(input).EnableMouse(true).Run()
 }
 
-func (s Shell) handleCommand(line string, ch chan<- string, output *tview.TextView) {
+func (s Shell) handleCommand(line string, ch chan<- CmdChannel, output *tview.TextView) {
 	parts := strings.Fields(line)
 	cmd := parts[0]
 	args := parts[1:]
@@ -118,6 +134,8 @@ func (s Shell) handleCommand(line string, ch chan<- string, output *tview.TextVi
 		fmt.Fprintf(output, "%s", "wingman")
 	case "/clear":
 		output.Clear()
+	case "/exit":
+		os.Exit(0)
 	case "/add":
 		paths := args
 		err := s.Repository.AddFiles(paths)
@@ -126,17 +144,25 @@ func (s Shell) handleCommand(line string, ch chan<- string, output *tview.TextVi
 		} else {
 			fmt.Fprintf(output, "%s", "Added file(s)\n")
 		}
+	case "/drop":
+		paths := args
+		s.Repository.DropFiles(paths)
+		fmt.Fprintf(output, "%s", "Dropped file(s)\n")
 	default:
+		cmdCh := CmdChannel{}
+
 		input := strings.Join(parts, " ")
 		prompt := s.Repository.CreateMasterPrompt(input)
-		llm := llm.GetLLM(prompt, *s.Flags.Model)
-		response, err := llm.Call()
+		response, err := s.LLM.Call(prompt)
 		if err != nil {
-			return // TODO: Handle err
+			cmdCh.Error = err
+		} else {
+			cmdCh.Response = response.Response
 		}
-		ch <- response.Response
 
-		err = llm.WriteToHistory(input, response)
+		ch <- cmdCh
+
+		err = s.LLM.WriteToHistory(input, response)
 		if err != nil {
 			return // TODO: Handle err
 		}

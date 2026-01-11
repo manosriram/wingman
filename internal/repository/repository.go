@@ -146,13 +146,22 @@ func (r *Repository) AddFile(path string) error {
 
 func (r *Repository) AddFiles(paths []string) error {
 	for _, path := range paths {
-		d, err := os.ReadFile(path)
+		err := r.AddFile(path)
 		if err != nil {
 			return err
 		}
-		r.AddedFiles[path] = string(d)
 	}
 	return nil
+}
+
+func (r *Repository) DropFile(path string) {
+	delete(r.AddedFiles, path)
+}
+
+func (r *Repository) DropFiles(paths []string) {
+	for _, path := range paths {
+		r.DropFile(path)
+	}
 }
 
 func (r *Repository) CreateMasterPrompt(input string) string {
