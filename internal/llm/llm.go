@@ -31,16 +31,20 @@ type LLM interface {
 }
 
 func NewLLM(model string) (LLM, error) {
-	if strings.HasPrefix(string(model), "claude") {
+	if model == "" {
+		return nil, errors.New("model cannot be empty")
+	}
+
+	if strings.HasPrefix(model, "claude") {
 		if os.Getenv("ANTHROPIC_API_KEY") == "" {
 			return nil, errors.New("env ANTHROPIC_API_KEY not set")
 		}
 		return NewClaudeLLM(LLMRequest{Model: model}), nil
-	} else if strings.HasPrefix(string(model), "gpt") {
-		// openai
+	} else if strings.HasPrefix(model, "gpt") {
+		return nil, errors.New("OpenAI models not yet implemented")
 	}
 
-	return nil, nil
+	return nil, errors.New("unsupported model: " + model)
 }
 
 // TODO: add token count check
